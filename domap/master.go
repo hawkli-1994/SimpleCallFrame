@@ -80,6 +80,8 @@ func (m *Master) SetRes(res *Result) {
 }
 
 func (m *Master) Stop() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	close(m.stop)
 }
 

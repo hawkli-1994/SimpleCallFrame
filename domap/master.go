@@ -38,7 +38,8 @@ func (m *Master) initTokenBucket() {
 }
 
 func (m *Master) addToken() {
-	// 增加令牌
+	// 增加con个令牌
+	// TODO 灵活传参
 	for i := 0; i < m.con; i++ {
 		m.tokenBucket <- 1
 	}

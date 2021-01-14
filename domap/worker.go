@@ -7,13 +7,14 @@ import (
 )
 
 func Worker(m *Master) *Result {
-	timeout := time.After(time.Second * time.Duration(m.timeout))
+	isTimeout := time.After(time.Second * time.Duration(m.timeout))
 	done := make(chan bool, 1)
 	done<-true
 	for {
 		select {
 		case <-done:
 			go func(done chan bool) {
+				m.GetToken()
 				result := &Result{}
 				defer func() {
 					if p := recover(); p != nil {
@@ -24,10 +25,11 @@ func Worker(m *Master) *Result {
 					done <- true
 				}()
 				task := <-m.queue
+				result.key = task.key
 				fRes := m.f(task.key)
 				result.Res = fRes
 			}(done)
-		case <-timeout:
+		case <-isTimeout:
 			return nil
 		case <-m.stop:
 			return nil

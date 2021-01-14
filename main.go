@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 	"./domap"
@@ -18,6 +19,9 @@ func GetWeather(city string) string {
 func main()  {
 	m := domap.Helper()
 	cities := []string{"Shanghai", "Beijing", "Wuhan"}
+	for i := 0; i < 1000; i++ {
+		cities = append(cities, fmt.Sprintf("City Num: %d", i))
+	}
 	m.SetData(cities)
 	m.SetFunc(GetWeather)
 	m.SetCon(10)

@@ -26,3 +26,9 @@ func main() {
    var res []Res = Helper().set
 }
 ```
+ ### 设计思路
+ * Master做任务控制
+ * Worker作为工作线程
+ * 使用令牌桶控制并发, 并优化了头部阻塞
+ * 使用select 等待 chan, 通过关闭chan来通知线程主动退出
+ * TODO 尾部优化，当所剩Task不多时, 剩余Task可以重复请求

@@ -66,7 +66,8 @@ func (m *Master) Run() int {
 	for i := 0; i < m.con; i++ {
 		wg.Add(1)
 		go func() {
-			Worker(m, wg)
+			defer wg.Done()
+			Worker(m)
 		}()
 	}
 	wg.Wait()

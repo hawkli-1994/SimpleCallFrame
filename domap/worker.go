@@ -3,12 +3,10 @@ package domap
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 )
 
-func Worker(m *Master, wg *sync.WaitGroup) *Result {
-	defer wg.Done()
+func Worker(m *Master) *Result {
 	timeout := time.After(time.Second * time.Duration(m.timeout))
 	done := make(chan bool, 1)
 	for {

@@ -1,4 +1,4 @@
-package main
+package domap
 
 import (
 	"errors"
@@ -27,13 +27,13 @@ func Worker(m *Master, wg *sync.WaitGroup) *Result {
 				if p := recover(); p != nil {
 					err := errors.New(fmt.Sprintf("panic: %s\n", p))
 					result := &Result{err: err,}
-					m.setRes(result)
+					m.SetRes(result)
 				}
 			}()
 			task := <- m.queue
 			fRes := m.f(task.key)
-			result := &Result{res:fRes,}
-			m.setRes(result)
+			result := &Result{Res: fRes,}
+			m.SetRes(result)
 		}(done)
 		select {
 		case <- done:

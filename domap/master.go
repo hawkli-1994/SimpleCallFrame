@@ -1,4 +1,4 @@
-package main
+package domap
 
 import (
 	"container/list"
@@ -12,7 +12,7 @@ type Task struct {
 
 type Result struct {
 	key string
-	res string
+	Res string
 	err error
 
 }
@@ -30,7 +30,7 @@ type Master struct {
 	timeout int
 }
 
-func (m *Master) setData(args []string) *Master {
+func (m *Master) SetData(args []string) *Master {
 	m.tasks = list.New()
 	for _, key := range args {
 		m.tasks.PushBack(&Task{
@@ -40,19 +40,19 @@ func (m *Master) setData(args []string) *Master {
 	return m
 }
 
-func (m *Master) setFunc(f Handler) *Master {
+func (m *Master) SetFunc(f Handler) *Master {
 	m.f = f
 	return m
 }
 
-func (m *Master) setCon(con int) *Master {
+func (m *Master) SetCon(con int) *Master {
 	m.con = con
 	m.queue = make(chan *Task, con)
 	m.stop = make(chan int, 0)
 	return m
 }
 
-func (m *Master) setTimeout(timeout int) *Master {
+func (m *Master) SetTimeout(timeout int) *Master {
 	m.timeout = timeout
 	return m
 }
@@ -75,7 +75,7 @@ func (m *Master) Run() int {
 	return 0
 }
 
-func (m *Master)setRes(res *Result) {
+func (m *Master)SetRes(res *Result) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.results = append(m.results, res)
@@ -85,7 +85,7 @@ func (m *Master) Stop() {
 	close(m.stop)
 }
 
-func (m *Master) getResults() []*Result {
+func (m *Master) GetResults() []*Result {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.results

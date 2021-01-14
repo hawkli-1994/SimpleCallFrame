@@ -36,6 +36,7 @@ func (m *Master) SetData(args []string) *Master {
 			key: key,
 		})
 	}
+	m.queue = make(chan *Task, m.tasks.Len())
 	return m
 }
 
@@ -46,8 +47,6 @@ func (m *Master) SetFunc(f Handler) *Master {
 
 func (m *Master) SetCon(con int) *Master {
 	m.con = con
-	m.queue = make(chan *Task, con)
-	m.stop = make(chan int, 0)
 	return m
 }
 
@@ -57,6 +56,7 @@ func (m *Master) SetTimeout(timeout int) *Master {
 }
 
 func (m *Master) Run() int {
+	m.stop = make(chan int)
 	for e := m.tasks.Front(); e != nil; e = e.Next() {
 		task := e.Value.(*Task)
 		task.timeout = m.timeout

@@ -9,17 +9,12 @@ import (
 func Worker(m *Master) *Result {
 	timeout := time.After(time.Second * time.Duration(m.timeout))
 	done := make(chan bool, 1)
+	done<-true
 	for {
 		select {
 		case <-done:
-			continue
-		case <-timeout:
-			return nil
-		case <-m.stop:
-			return nil
-		default:
-			result := &Result{}
 			go func(done chan bool) {
+				result := &Result{}
 				defer func() {
 					if p := recover(); p != nil {
 						err := errors.New(fmt.Sprintf("panic: %s\n", p))
@@ -32,6 +27,12 @@ func Worker(m *Master) *Result {
 				fRes := m.f(task.key)
 				result.Res = fRes
 			}(done)
+		case <-timeout:
+			return nil
+		case <-m.stop:
+			return nil
+		default:
+			continue
 		}
 	}
 }

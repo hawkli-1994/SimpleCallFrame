@@ -23,7 +23,7 @@ func main()  {
 	m.SetCon(10)
 	m.SetTimeout(Timeout)
 	m.Run()
-	time.Sleep(time.Duration(rand.Intn(1)))
+	//time.Sleep(time.Duration(rand.Intn(1)))
 	m.Stop()
 	for _, res := range m.GetResults() {
 		println(res.Res)

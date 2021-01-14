@@ -1,332 +1,84 @@
 package domap
 
 import (
-	"container/list"
-	"reflect"
-	"sync"
+	"fmt"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
-func TestHelper(t *testing.T) {
-	tests := []struct {
-		name string
-		want *Master
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := Helper(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Helper() = %v, want %v", got, tt.want)
-			}
-		})
+const CityNum = 100
+const Con = 10
+const DefaultTimeout = 10
+
+var Count int32 = 0
+
+func GetWeatherObs(city string) string {
+	num := atomic.LoadInt32(&Count)
+	atomic.AddInt32(&Count, 1)
+	//fmt.Printf("num is %d", num)
+	if num < 10 {
+		time.Sleep(1000 * time.Second)
+		return "timeout"
+	} else {
+		time.Sleep(time.Second)
+		return "ok"
 	}
 }
 
-func TestMaster_GetResults(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
+func TestHeadObstruction(t *testing.T) {
+	// 头部阻塞场景
+	// 100个城市
+	// 指定10个并发数量，然后前十个一定阻塞
+	// 这时头部阻塞优化自动启动
+	// 最后有9990 个成功
+	m := Helper()
+	cities := []string{"Shanghai", "Beijing", "Wuhan"}
+	for i := 3; i < CityNum; i++ {
+		cities = append(cities, fmt.Sprintf("City Num: %d", i))
 	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   []*Result
-	}{
-		// TODO: Add test cases.
+	m.SetData(cities)
+	m.SetFunc(GetWeatherObs)
+	m.SetCon(Con)
+	m.SetTimeout(DefaultTimeout)
+	m.Run()
+	m.Stop()
+	successCount := 0
+	timeoutCount := 0
+	for _, r := range m.GetResults() {
+		if r.Res == "ok" {
+			successCount += 1
+		}
+		if r.Res == "timeout" {
+			timeoutCount += 1
+		}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.GetResults(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetResults() = %v, want %v", got, tt.want)
-			}
-		})
+	if successCount < 10 {
+		t.Errorf("头部阻塞优化失败: 成功数量: %d", successCount)
+	}
+	if timeoutCount != 0 {
+		t.Errorf("没有正确结束, 失败数量: %d", timeoutCount)
 	}
 }
 
-func TestMaster_Run(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.Run(); got != tt.want {
-				t.Errorf("Run() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestMaster_SetCon(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	type args struct {
-		con int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Master
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.SetCon(tt.args.con); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SetCon() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestMaster_SetData(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	type args struct {
-		args []string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Master
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.SetData(tt.args.args); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SetData() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+//func GetWeatherTimeout(city string) string {
+//	time.Sleep(time.Duration(rand.Intn(10 * 1.5)))
+//	return city + ":OK"
+//}
 
-func TestMaster_SetFunc(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	type args struct {
-		f Handler
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Master
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.SetFunc(tt.args.f); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SetFunc() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestMaster_SetRes(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	type args struct {
-		res *Result
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-		})
-	}
-}
-
-func TestMaster_SetTimeout(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	type args struct {
-		timeout int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Master
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-			if got := m.SetTimeout(tt.args.timeout); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SetTimeout() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestMaster_Stop(t *testing.T) {
-	type fields struct {
-		mu      sync.Mutex
-		queue   chan *Task
-		stop    chan int
-		tasks   *list.List
-		results []*Result
-		f       Handler
-		con     int
-		timeout int
-	}
-	tests := []struct {
-		name   string
-		fields fields
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &Master{
-				mu:      tt.fields.mu,
-				queue:   tt.fields.queue,
-				stop:    tt.fields.stop,
-				tasks:   tt.fields.tasks,
-				results: tt.fields.results,
-				f:       tt.fields.f,
-				con:     tt.fields.con,
-				timeout: tt.fields.timeout,
-			}
-		})
-	}
-}
+//func TestTimeout(t *testing.T) {
+//	// 测试超时场景
+//	m := Helper()
+//	cities := []string{"Shanghai", "Beijing", "Wuhan"}
+//	for i := 0; i < 1000; i++ {
+//		cities = append(cities, fmt.Sprintf("City Num: %d", i))
+//	}
+//	m.SetData(cities)
+//	m.SetFunc(GetWeatherTimeout)
+//	m.SetCon(10)
+//	m.SetTimeout(DefaultTimeout)
+//	m.Run()
+//	m.Stop()
+//}

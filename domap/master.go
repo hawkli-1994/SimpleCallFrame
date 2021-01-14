@@ -2,6 +2,7 @@ package domap
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -45,9 +46,9 @@ func (m *Master) addToken() {
 	}
 }
 
-func (m *Master) GetToken() {
+func (m *Master) GetToken() int {
 	// 获取令牌
-	<-m.tokenBucket
+	return <-m.tokenBucket
 }
 
 func (m *Master) SetData(args []string) *Master {
@@ -86,8 +87,9 @@ func (m *Master) CheckHeadObstruction(starting time.Time, threshold int, start c
 		case <-start:
 			go func() {
 				now := time.Now()
-				if starting.Sub(now) >= time.Duration(threshold) {
+				if now.Sub(starting) >= time.Duration(threshold) {
 					// TODO 头部阻塞优化
+					fmt.Printf("启动头部阻塞优化, 再加入%d个令牌\n", m.con)
 					m.addToken()
 					return
 				}
@@ -120,7 +122,7 @@ func (m *Master) Run() int {
 	now := time.Now()
 	start := make(chan int, 1)
 	start <- 1
-	threshold := 2 // 阈值设置
+	threshold := m.timeout / 2 // 阈值设置 为一半的超时时间
 	go m.CheckHeadObstruction(now, threshold, start)
 	wg.Wait()
 	m.Stop()

@@ -10,11 +10,14 @@ func Worker(m *Master) *Result {
 	isTimeout := time.After(time.Second * time.Duration(m.timeout))
 	done := make(chan bool, 1)
 	done<-true
+	token := -1
 	for {
 		select {
 		case <-done:
 			go func(done chan bool) {
-				m.GetToken()
+				if token == -1 {
+					token = m.GetToken()
+				}
 				result := &Result{}
 				defer func() {
 					if p := recover(); p != nil {
